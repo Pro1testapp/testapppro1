@@ -21,7 +21,7 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        h1 {
+        h1, h2 {
             text-align: center;
             color: #333;
         }
@@ -37,7 +37,9 @@
         }
 
         input[type="number"],
-        input[type="date"] {
+        input[type="text"],
+        input[type="date"],
+        select {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -94,6 +96,13 @@
             background-color: #f9f9f9;
             border-radius: 4px;
         }
+
+        .toy-analysis {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -102,14 +111,11 @@
 
         <!-- Sales Form -->
         <div class="form-group">
+            <label for="toyName">Toy Name:</label>
+            <input type="text" id="toyName" required>
+
             <label for="units">Number of Units:</label>
             <input type="number" id="units" required>
-
-            <label for="sellingPrice">Selling Price per Unit:</label>
-            <input type="number" id="sellingPrice" step="0.01" required>
-
-            <label for="costPrice">Cost Price per Unit:</label>
-            <input type="number" id="costPrice" step="0.01" required>
 
             <label for="date">Date:</label>
             <input type="date" id="date" required>
@@ -140,17 +146,16 @@
             </div>
 
             <div class="summary" id="summary"></div>
+            
+            <h2>Sales by Toy Type</h2>
+            <div class="toy-analysis" id="toyAnalysis"></div>
 
             <table id="salesTable">
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Units</th>
-                        <th>Selling Price</th>
-                        <th>Cost Price</th>
-                        <th>Revenue</th>
-                        <th>Expenditure</th>
-                        <th>Net Income</th>
+                        <th>Toy Name</th>
+                        <th>Units Sold</th>
                     </tr>
                 </thead>
                 <tbody id="salesData"></tbody>
@@ -171,24 +176,19 @@
         let salesData = JSON.parse(localStorage.getItem('salesData')) || [];
 
         function saveSale() {
+            const toyName = document.getElementById('toyName').value;
             const units = parseInt(document.getElementById('units').value);
-            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
-            const costPrice = parseFloat(document.getElementById('costPrice').value);
             const date = document.getElementById('date').value;
 
-            if (!units || !sellingPrice || !costPrice || !date) {
+            if (!toyName || !units || !date) {
                 alert('Please fill all fields');
                 return;
             }
 
             const sale = {
                 date: date,
-                units: units,
-                sellingPrice: sellingPrice,
-                costPrice: costPrice,
-                revenue: units * sellingPrice,
-                expenditure: units * costPrice,
-                netIncome: (units * sellingPrice) - (units * costPrice)
+                toyName: toyName,
+                units: units
             };
 
             salesData.push(sale);
@@ -198,9 +198,8 @@
         }
 
         function clearForm() {
+            document.getElementById('toyName').value = '';
             document.getElementById('units').value = '';
-            document.getElementById('sellingPrice').value = '';
-            document.getElementById('costPrice').value = '';
             document.getElementById('date').value = '';
         }
 
@@ -217,10 +216,11 @@
             let filteredData = filterDataByPeriod(analysisType);
             displayData(filteredData);
             updateSummary(filteredData);
+            updateToyAnalysis(filteredData);
         }
 
         function filterDataByPeriod(period) {
-            
+            const today = new Date();
             const startDate = new Date();
 
             switch(period) {
@@ -258,29 +258,49 @@
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td>${sale.date}</td>
+                    <td>${sale.toyName}</td>
                     <td>${sale.units}</td>
-                    <td>₹${sale.sellingPrice}</td>
-                    <td>₹${sale.costPrice}</td>
-                    <td>₹${sale.revenue}</td>
-                    <td>₹${sale.expenditure}</td>
-                    <td>₹${sale.netIncome}</td>
                 `;
             });
         }
 
         function updateSummary(data) {
-            const totalRevenue = data.reduce((sum, sale) => sum + sale.revenue, 0);
-            const totalExpenditure = data.reduce((sum, sale) => sum + sale.expenditure, 0);
-            const totalNetIncome = data.reduce((sum, sale) => sum + sale.netIncome, 0);
             const totalUnits = data.reduce((sum, sale) => sum + sale.units, 0);
 
             document.getElementById('summary').innerHTML = `
-                <h3>Summary</h3>
+                <h3>Summary for Selected Period</h3>
                 <p>Total Units Sold: ${totalUnits}</p>
-                <p>Total Revenue: ₹${totalRevenue.toFixed(2)}</p>
-                <p>Total Expenditure: ₹${totalExpenditure.toFixed(2)}</p>
-                <p>Total Net Income: ₹${totalNetIncome.toFixed(2)}</p>
             `;
+        }
+
+        function updateToyAnalysis(data) {
+            const toyStats = {};
+            
+            // Calculate units sold for each toy
+            data.forEach(sale => {
+                if (!toyStats[sale.toyName]) {
+                    toyStats[sale.toyName] = 0;
+                }
+                toyStats[sale.toyName] += sale.units;
+            });
+
+            // Create HTML for toy analysis
+            let toyAnalysisHTML = '<table><tr><th>Toy Name</th><th>Total Units Sold</th></tr>';
+            
+            Object.entries(toyStats)
+                .sort(([,a], [,b]) => b - a) // Sort by units sold (descending)
+                .forEach(([toyName, units]) => {
+                    toyAnalysisHTML += `
+                        <tr>
+                            <td>${toyName}</td>
+                            <td>${units}</td>
+                        </tr>
+                    `;
+                });
+            
+            toyAnalysisHTML += '</table>';
+            
+            document.getElementById('toyAnalysis').innerHTML = toyAnalysisHTML;
         }
 
         function exportData(format) {
@@ -303,17 +323,13 @@
         }
 
         function exportToCSV(data) {
-            const headers = ['Date', 'Units', 'Selling Price', 'Cost Price', 'Revenue', 'Expenditure', 'Net Income'];
+            const headers = ['Date', 'Toy Name', 'Units'];
             const csvContent = [
                 headers.join(','),
                 ...data.map(row => [
                     row.date,
-                    row.units,
-                    row.sellingPrice,
-                    row.costPrice,
-                    row.revenue,
-                    row.expenditure,
-                    row.netIncome
+                    row.toyName,
+                    row.units
                 ].join(','))
             ].join('\n');
 
@@ -322,17 +338,13 @@
 
         function exportToExcel(data) {
             let xlsx = '<table>';
-            xlsx += '<tr><th>Date</th><th>Units</th><th>Selling Price</th><th>Cost Price</th><th>Revenue</th><th>Expenditure</th><th>Net Income</th></tr>';
+            xlsx += '<tr><th>Date</th><th>Toy Name</th><th>Units</th></tr>';
             
             data.forEach(row => {
                 xlsx += `<tr>
                     <td>${row.date}</td>
+                    <td>${row.toyName}</td>
                     <td>${row.units}</td>
-                    <td>${row.sellingPrice}</td>
-                    <td>${row.costPrice}</td>
-                    <td>${row.revenue}</td>
-                    <td>${row.expenditure}</td>
-                    <td>${row.netIncome}</td>
                 </tr>`;
             });
             
@@ -347,8 +359,6 @@
         }
 
         function exportToPDF(data) {
-            // Note: This is a simple PDF export. For better PDF formatting,
-            // consider using libraries like jsPDF
             let printWindow = window.open('', '', 'height=400,width=800');
             printWindow.document.write('<html><head><title>Sales Data</title>');
             printWindow.document.write('</head><body>');
