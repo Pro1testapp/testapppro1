@@ -4,76 +4,375 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bhavik Plastic - Sales Tracker</title>
-    <link rel="stylesheet" href="toys.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .analysis-section {
+            margin-top: 20px;
+        }
+
+        .analysis-controls {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .export-buttons {
+            margin-top: 20px;
+        }
+
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Bhavik Plastic</h1>
-        <h2>Sales Tracker</h2>
-    </div>
+    <div class="container">
+        <h1>Bhavik Plastic - Sales Tracker</h1>
 
-    <div class="form-container">
-        <form id="salesForm">
-            <div class="form-group">
-                <label for="date">Date:</label>
-                <input type="date" id="date" required>
-            </div>
-            <div class="form-group">
-                <label for="units">Number of Units:</label>
-                <input type="number" id="units" required>
-            </div>
-            <div class="form-group">
-                <label for="costPrice">Cost Price per Unit:</label>
-                <input type="number" id="costPrice" step="0.01" required>
-            </div>
-            <div class="form-group">
-                <label for="sellingPrice">Selling Price per Unit:</label>
-                <input type="number" id="sellingPrice" step="0.01" required>
-            </div>
-            <button type="submit">Add Sale</button>
-        </form>
-    </div>
+        <!-- Sales Form -->
+        <div class="form-group">
+            <label for="units">Number of Units:</label>
+            <input type="number" id="units" required>
 
-    <div class="section-container">
-        <div class="tabs">
-            <button class="tab-button" onclick="showTab('sales')">Sales Analysis</button>
-            <button class="tab-button" onclick="showTab('export')">Export Data</button>
+            <label for="sellingPrice">Selling Price per Unit:</label>
+            <input type="number" id="sellingPrice" step="0.01" required>
+
+            <label for="costPrice">Cost Price per Unit:</label>
+            <input type="number" id="costPrice" step="0.01" required>
+
+            <label for="date">Date:</label>
+            <input type="date" id="date" required>
+
+            <button onclick="saveSale()">Save Sale</button>
         </div>
 
-        <div id="sales-tab" class="tab-content">
-            <h3>Sales Analysis</h3>
-            <select id="analysisType" onchange="handleAnalysisTypeChange()">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
-                <option value="custom">Custom Date Range</option>
-            </select>
+        <!-- Analysis Section -->
+        <div class="analysis-section">
+            <div class="analysis-controls">
+                <label for="analysisType">Analysis Period:</label>
+                <select id="analysisType" onchange="updateAnalysis()">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="yearly">Yearly</option>
+                    <option value="custom">Custom</option>
+                </select>
 
-            <div id="customDateRange" style="display: none; margin-top: 10px;">
-                <input type="date" id="startDate">
-                <input type="date" id="endDate">
-                <button onclick="analyzeData()">Apply</button>
+                <div id="customDateRange" style="display: none;">
+                    <label for="startDate">Start Date:</label>
+                    <input type="date" id="startDate">
+                    <label for="endDate">End Date:</label>
+                    <input type="date" id="endDate">
+                    <button onclick="updateAnalysis()">Apply</button>
+                </div>
             </div>
 
-            <div id="analysisResults">
-                <!-- Results will be displayed here -->
-            </div>
+            <div class="summary" id="summary"></div>
+
+            <table id="salesTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Units</th>
+                        <th>Selling Price</th>
+                        <th>Cost Price</th>
+                        <th>Revenue</th>
+                        <th>Expenditure</th>
+                        <th>Net Income</th>
+                    </tr>
+                </thead>
+                <tbody id="salesData"></tbody>
+            </table>
         </div>
 
-        <div id="export-tab" class="tab-content">
-            <h3>Export Data</h3>
-            <div class="export-buttons">
-                <button onclick="exportData('excel')">Export to Excel</button>
-                <button onclick="exportData('csv')">Export to CSV</button>
-                <button onclick="exportData('pdf')">Export to PDF</button>
-                <button onclick="exportData('json')">Export to JSON</button>
-            </div>
+        <!-- Export Buttons -->
+        <div class="export-buttons">
+            <button onclick="exportData('excel')">Export to Excel</button>
+            <button onclick="exportData('csv')">Export to CSV</button>
+            <button onclick="exportData('pdf')">Export to PDF</button>
+            <button onclick="exportData('json')">Export to JSON</button>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="toys.js"></script>
+    <script>
+        // Initialize sales data from localStorage
+        let salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+
+        function saveSale() {
+            const units = parseInt(document.getElementById('units').value);
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+            const costPrice = parseFloat(document.getElementById('costPrice').value);
+            const date = document.getElementById('date').value;
+
+            if (!units || !sellingPrice || !costPrice || !date) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            const sale = {
+                date: date,
+                units: units,
+                sellingPrice: sellingPrice,
+                costPrice: costPrice,
+                revenue: units * sellingPrice,
+                expenditure: units * costPrice,
+                netIncome: (units * sellingPrice) - (units * costPrice)
+            };
+
+            salesData.push(sale);
+            localStorage.setItem('salesData', JSON.stringify(salesData));
+            updateAnalysis();
+            clearForm();
+        }
+
+        function clearForm() {
+            document.getElementById('units').value = '';
+            document.getElementById('sellingPrice').value = '';
+            document.getElementById('costPrice').value = '';
+            document.getElementById('date').value = '';
+        }
+
+        function updateAnalysis() {
+            const analysisType = document.getElementById('analysisType').value;
+            const customDateRange = document.getElementById('customDateRange');
+            
+            if (analysisType === 'custom') {
+                customDateRange.style.display = 'block';
+            } else {
+                customDateRange.style.display = 'none';
+            }
+
+            let filteredData = filterDataByPeriod(analysisType);
+            displayData(filteredData);
+            updateSummary(filteredData);
+        }
+
+        function filterDataByPeriod(period) {
+            
+            const startDate = new Date();
+
+            switch(period) {
+                case 'daily':
+                    startDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'weekly':
+                    startDate.setDate(today.getDate() - 7);
+                    break;
+                case 'monthly':
+                    startDate.setMonth(today.getMonth() - 1);
+                    break;
+                case 'quarterly':
+                    startDate.setMonth(today.getMonth() - 3);
+                    break;
+                case 'yearly':
+                    startDate.setFullYear(today.getFullYear() - 1);
+                    break;
+                case 'custom':
+                    const customStart = document.getElementById('startDate').value;
+                    const customEnd = document.getElementById('endDate').value;
+                    return salesData.filter(sale => 
+                        sale.date >= customStart && sale.date <= customEnd
+                    );
+            }
+
+            return salesData.filter(sale => new Date(sale.date) >= startDate);
+        }
+
+        function displayData(data) {
+            const tbody = document.getElementById('salesData');
+            tbody.innerHTML = '';
+
+            data.forEach(sale => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${sale.date}</td>
+                    <td>${sale.units}</td>
+                    <td>₹${sale.sellingPrice}</td>
+                    <td>₹${sale.costPrice}</td>
+                    <td>₹${sale.revenue}</td>
+                    <td>₹${sale.expenditure}</td>
+                    <td>₹${sale.netIncome}</td>
+                `;
+            });
+        }
+
+        function updateSummary(data) {
+            const totalRevenue = data.reduce((sum, sale) => sum + sale.revenue, 0);
+            const totalExpenditure = data.reduce((sum, sale) => sum + sale.expenditure, 0);
+            const totalNetIncome = data.reduce((sum, sale) => sum + sale.netIncome, 0);
+            const totalUnits = data.reduce((sum, sale) => sum + sale.units, 0);
+
+            document.getElementById('summary').innerHTML = `
+                <h3>Summary</h3>
+                <p>Total Units Sold: ${totalUnits}</p>
+                <p>Total Revenue: ₹${totalRevenue.toFixed(2)}</p>
+                <p>Total Expenditure: ₹${totalExpenditure.toFixed(2)}</p>
+                <p>Total Net Income: ₹${totalNetIncome.toFixed(2)}</p>
+            `;
+        }
+
+        function exportData(format) {
+            const data = filterDataByPeriod(document.getElementById('analysisType').value);
+            
+            switch(format) {
+                case 'excel':
+                    exportToExcel(data);
+                    break;
+                case 'csv':
+                    exportToCSV(data);
+                    break;
+                case 'pdf':
+                    exportToPDF(data);
+                    break;
+                case 'json':
+                    exportToJSON(data);
+                    break;
+            }
+        }
+
+        function exportToCSV(data) {
+            const headers = ['Date', 'Units', 'Selling Price', 'Cost Price', 'Revenue', 'Expenditure', 'Net Income'];
+            const csvContent = [
+                headers.join(','),
+                ...data.map(row => [
+                    row.date,
+                    row.units,
+                    row.sellingPrice,
+                    row.costPrice,
+                    row.revenue,
+                    row.expenditure,
+                    row.netIncome
+                ].join(','))
+            ].join('\n');
+
+            downloadFile(csvContent, 'sales_data.csv', 'text/csv');
+        }
+
+        function exportToExcel(data) {
+            let xlsx = '<table>';
+            xlsx += '<tr><th>Date</th><th>Units</th><th>Selling Price</th><th>Cost Price</th><th>Revenue</th><th>Expenditure</th><th>Net Income</th></tr>';
+            
+            data.forEach(row => {
+                xlsx += `<tr>
+                    <td>${row.date}</td>
+                    <td>${row.units}</td>
+                    <td>${row.sellingPrice}</td>
+                    <td>${row.costPrice}</td>
+                    <td>${row.revenue}</td>
+                    <td>${row.expenditure}</td>
+                    <td>${row.netIncome}</td>
+                </tr>`;
+            });
+            
+            xlsx += '</table>';
+
+            downloadFile(xlsx, 'sales_data.xls', 'application/vnd.ms-excel');
+        }
+
+        function exportToJSON(data) {
+            const jsonContent = JSON.stringify(data, null, 2);
+            downloadFile(jsonContent, 'sales_data.json', 'application/json');
+        }
+
+        function exportToPDF(data) {
+            // Note: This is a simple PDF export. For better PDF formatting,
+            // consider using libraries like jsPDF
+            let printWindow = window.open('', '', 'height=400,width=800');
+            printWindow.document.write('<html><head><title>Sales Data</title>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h1>Sales Data</h1>');
+            printWindow.document.write(document.getElementById('salesTable').outerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function downloadFile(content, fileName, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Initialize the page
+        updateAnalysis();
+    </script>
 </body>
 </html>
