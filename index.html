@@ -38,7 +38,8 @@
 
         input[type="number"],
         input[type="text"],
-        input[type="date"] {
+        input[type="date"],
+        select {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -102,6 +103,13 @@
             background-color: #f0f8ff;
             border-radius: 4px;
         }
+
+        .payment-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff0f5;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -118,6 +126,13 @@
 
             <label for="sellingPrice">Selling Price:</label>
             <input type="number" id="sellingPrice" step="0.01" required>
+
+            <label for="paymentMethod">Payment Method:</label>
+            <select id="paymentMethod" required>
+                <option value="">Select Payment Method</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+            </select>
 
             <label for="date">Date:</label>
             <input type="date" id="date" required>
@@ -149,6 +164,7 @@
 
             <div class="summary" id="summary"></div>
             <div class="toy-summary" id="toySummary"></div>
+            <div class="payment-summary" id="paymentSummary"></div>
 
             <table id="salesTable">
                 <thead>
@@ -157,6 +173,7 @@
                         <th>Toy Name</th>
                         <th>Units</th>
                         <th>Selling Price</th>
+                        <th>Payment Method</th>
                         <th>Revenue</th>
                     </tr>
                 </thead>
@@ -181,9 +198,10 @@
             const toyName = document.getElementById('toyName').value;
             const units = parseInt(document.getElementById('units').value);
             const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+            const paymentMethod = document.getElementById('paymentMethod').value;
             const date = document.getElementById('date').value;
 
-            if (!toyName || !units || !sellingPrice || !date) {
+            if (!toyName || !units || !sellingPrice || !paymentMethod || !date) {
                 alert('Please fill all fields');
                 return;
             }
@@ -193,6 +211,7 @@
                 toyName: toyName,
                 units: units,
                 sellingPrice: sellingPrice,
+                paymentMethod: paymentMethod,
                 revenue: units * sellingPrice
             };
 
@@ -206,6 +225,7 @@
             document.getElementById('toyName').value = '';
             document.getElementById('units').value = '';
             document.getElementById('sellingPrice').value = '';
+            document.getElementById('paymentMethod').value = '';
             document.getElementById('date').value = '';
         }
 
@@ -223,6 +243,7 @@
             displayData(filteredData);
             updateSummary(filteredData);
             updateToySummary(filteredData);
+            updatePaymentSummary(filteredData);
         }
 
         function filterDataByPeriod(period) {
@@ -267,6 +288,7 @@
                     <td>${sale.toyName}</td>
                     <td>${sale.units}</td>
                     <td>₹${sale.sellingPrice}</td>
+                    <td>${sale.paymentMethod}</td>
                     <td>₹${sale.revenue}</td>
                 `;
             });
@@ -303,6 +325,32 @@
             document.getElementById('toySummary').innerHTML = summaryHTML;
         }
 
+        function updatePaymentSummary(data) {
+            const paymentSummary = data.reduce((acc, sale) => {
+                if (!acc[sale.paymentMethod]) {
+                    acc[sale.paymentMethod] = { count: 0, revenue: 0, units: 0 };
+                }
+                acc[sale.paymentMethod].count++;
+                acc[sale.paymentMethod].revenue += sale.revenue;
+                acc[sale.paymentMethod].units += sale.units;
+                return acc;
+            }, {});
+
+            let summaryHTML = '<h3>Payment Method Summary</h3>';
+            for (const [method, stats] of Object.entries(paymentSummary)) {
+                summaryHTML += `
+                    <p><strong>${method.charAt(0).toUpperCase() + method.slice(1)}</strong>:</p>
+                    <ul>
+                        <li>Number of Transactions: ${stats.count}</li>
+                        <li>Total Units: ${stats.units}</li>
+                        <li>Total Revenue: ₹${stats.revenue.toFixed(2)}</li>
+                    </ul>
+                `;
+            }
+
+            document.getElementById('paymentSummary').innerHTML = summaryHTML;
+        }
+
         function exportData(format) {
             const data = filterDataByPeriod(document.getElementById('analysisType').value);
             
@@ -323,7 +371,7 @@
         }
 
         function exportToCSV(data) {
-            const headers = ['Date', 'Toy Name', 'Units', 'Selling Price', 'Revenue'];
+            const headers = ['Date', 'Toy Name', 'Units', 'Selling Price', 'Payment Method', 'Revenue'];
             const csvContent = [
                 headers.join(','),
                 ...data.map(row => [
@@ -331,6 +379,7 @@
                     row.toyName,
                     row.units,
                     row.sellingPrice,
+                    row.paymentMethod,
                     row.revenue
                 ].join(','))
             ].join('\n');
@@ -340,7 +389,7 @@
 
         function exportToExcel(data) {
             let xlsx = '<table>';
-            xlsx += '<tr><th>Date</th><th>Toy Name</th><th>Units</th><th>Selling Price</th><th>Revenue</th></tr>';
+            xlsx += '<tr><th>Date</th><th>Toy Name</th><th>Units</th><th>Selling Price</th><th>Payment Method</th><th>Revenue</th></tr>';
             
             data.forEach(row => {
                 xlsx += `<tr>
@@ -348,6 +397,7 @@
                     <td>${row.toyName}</td>
                     <td>${row.units}</td>
                     <td>${row.sellingPrice}</td>
+                    <td>${row.paymentMethod}</td>
                     <td>${row.revenue}</td>
                 </tr>`;
             });
