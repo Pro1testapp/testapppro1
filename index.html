@@ -21,7 +21,7 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        h1, h2 {
+        h1 {
             text-align: center;
             color: #333;
         }
@@ -38,8 +38,7 @@
 
         input[type="number"],
         input[type="text"],
-        input[type="date"],
-        select {
+        input[type="date"] {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -97,10 +96,10 @@
             border-radius: 4px;
         }
 
-        .toy-analysis {
+        .toy-summary {
             margin-top: 20px;
             padding: 15px;
-            background-color: #f9f9f9;
+            background-color: #f0f8ff;
             border-radius: 4px;
         }
     </style>
@@ -116,6 +115,9 @@
 
             <label for="units">Number of Units:</label>
             <input type="number" id="units" required>
+
+            <label for="sellingPrice">Selling Price:</label>
+            <input type="number" id="sellingPrice" step="0.01" required>
 
             <label for="date">Date:</label>
             <input type="date" id="date" required>
@@ -146,16 +148,16 @@
             </div>
 
             <div class="summary" id="summary"></div>
-            
-            <h2>Sales by Toy Type</h2>
-            <div class="toy-analysis" id="toyAnalysis"></div>
+            <div class="toy-summary" id="toySummary"></div>
 
             <table id="salesTable">
                 <thead>
                     <tr>
                         <th>Date</th>
                         <th>Toy Name</th>
-                        <th>Units Sold</th>
+                        <th>Units</th>
+                        <th>Selling Price</th>
+                        <th>Revenue</th>
                     </tr>
                 </thead>
                 <tbody id="salesData"></tbody>
@@ -178,9 +180,10 @@
         function saveSale() {
             const toyName = document.getElementById('toyName').value;
             const units = parseInt(document.getElementById('units').value);
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
             const date = document.getElementById('date').value;
 
-            if (!toyName || !units || !date) {
+            if (!toyName || !units || !sellingPrice || !date) {
                 alert('Please fill all fields');
                 return;
             }
@@ -188,7 +191,9 @@
             const sale = {
                 date: date,
                 toyName: toyName,
-                units: units
+                units: units,
+                sellingPrice: sellingPrice,
+                revenue: units * sellingPrice
             };
 
             salesData.push(sale);
@@ -200,6 +205,7 @@
         function clearForm() {
             document.getElementById('toyName').value = '';
             document.getElementById('units').value = '';
+            document.getElementById('sellingPrice').value = '';
             document.getElementById('date').value = '';
         }
 
@@ -216,7 +222,7 @@
             let filteredData = filterDataByPeriod(analysisType);
             displayData(filteredData);
             updateSummary(filteredData);
-            updateToyAnalysis(filteredData);
+            updateToySummary(filteredData);
         }
 
         function filterDataByPeriod(period) {
@@ -260,47 +266,41 @@
                     <td>${sale.date}</td>
                     <td>${sale.toyName}</td>
                     <td>${sale.units}</td>
+                    <td>₹${sale.sellingPrice}</td>
+                    <td>₹${sale.revenue}</td>
                 `;
             });
         }
 
         function updateSummary(data) {
+            const totalRevenue = data.reduce((sum, sale) => sum + sale.revenue, 0);
             const totalUnits = data.reduce((sum, sale) => sum + sale.units, 0);
 
             document.getElementById('summary').innerHTML = `
-                <h3>Summary for Selected Period</h3>
+                <h3>Period Summary</h3>
                 <p>Total Units Sold: ${totalUnits}</p>
+                <p>Total Revenue: ₹${totalRevenue.toFixed(2)}</p>
             `;
         }
 
-        function updateToyAnalysis(data) {
-            const toyStats = {};
-            
-            // Calculate units sold for each toy
-            data.forEach(sale => {
-                if (!toyStats[sale.toyName]) {
-                    toyStats[sale.toyName] = 0;
+        function updateToySummary(data) {
+            const toySummary = data.reduce((acc, sale) => {
+                if (!acc[sale.toyName]) {
+                    acc[sale.toyName] = { units: 0, revenue: 0 };
                 }
-                toyStats[sale.toyName] += sale.units;
-            });
+                acc[sale.toyName].units += sale.units;
+                acc[sale.toyName].revenue += sale.revenue;
+                return acc;
+            }, {});
 
-            // Create HTML for toy analysis
-            let toyAnalysisHTML = '<table><tr><th>Toy Name</th><th>Total Units Sold</th></tr>';
-            
-            Object.entries(toyStats)
-                .sort(([,a], [,b]) => b - a) // Sort by units sold (descending)
-                .forEach(([toyName, units]) => {
-                    toyAnalysisHTML += `
-                        <tr>
-                            <td>${toyName}</td>
-                            <td>${units}</td>
-                        </tr>
-                    `;
-                });
-            
-            toyAnalysisHTML += '</table>';
-            
-            document.getElementById('toyAnalysis').innerHTML = toyAnalysisHTML;
+            let summaryHTML = '<h3>Sales by Toy</h3>';
+            for (const [toy, stats] of Object.entries(toySummary)) {
+                summaryHTML += `
+                    <p><strong>${toy}</strong>: ${stats.units} units (Revenue: ₹${stats.revenue.toFixed(2)})</p>
+                `;
+            }
+
+            document.getElementById('toySummary').innerHTML = summaryHTML;
         }
 
         function exportData(format) {
@@ -323,13 +323,15 @@
         }
 
         function exportToCSV(data) {
-            const headers = ['Date', 'Toy Name', 'Units'];
+            const headers = ['Date', 'Toy Name', 'Units', 'Selling Price', 'Revenue'];
             const csvContent = [
                 headers.join(','),
                 ...data.map(row => [
                     row.date,
                     row.toyName,
-                    row.units
+                    row.units,
+                    row.sellingPrice,
+                    row.revenue
                 ].join(','))
             ].join('\n');
 
@@ -338,13 +340,15 @@
 
         function exportToExcel(data) {
             let xlsx = '<table>';
-            xlsx += '<tr><th>Date</th><th>Toy Name</th><th>Units</th></tr>';
+            xlsx += '<tr><th>Date</th><th>Toy Name</th><th>Units</th><th>Selling Price</th><th>Revenue</th></tr>';
             
             data.forEach(row => {
                 xlsx += `<tr>
                     <td>${row.date}</td>
                     <td>${row.toyName}</td>
                     <td>${row.units}</td>
+                    <td>${row.sellingPrice}</td>
+                    <td>${row.revenue}</td>
                 </tr>`;
             });
             
