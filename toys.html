@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhavik Plastic - Sales Tracker</title>
+    <link rel="stylesheet" href="toys.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Bhavik Plastic</h1>
+        <h2>Sales Tracker</h2>
+    </div>
+
+    <div class="form-container">
+        <form id="salesForm">
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label for="units">Number of Units:</label>
+                <input type="number" id="units" required>
+            </div>
+            <div class="form-group">
+                <label for="costPrice">Cost Price per Unit:</label>
+                <input type="number" id="costPrice" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="sellingPrice">Selling Price per Unit:</label>
+                <input type="number" id="sellingPrice" step="0.01" required>
+            </div>
+            <button type="submit">Add Sale</button>
+        </form>
+    </div>
+
+    <div class="section-container">
+        <div class="tabs">
+            <button class="tab-button" onclick="showTab('sales')">Sales Analysis</button>
+            <button class="tab-button" onclick="showTab('export')">Export Data</button>
+        </div>
+
+        <div id="sales-tab" class="tab-content">
+            <h3>Sales Analysis</h3>
+            <select id="analysisType" onchange="handleAnalysisTypeChange()">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+                <option value="custom">Custom Date Range</option>
+            </select>
+
+            <div id="customDateRange" style="display: none; margin-top: 10px;">
+                <input type="date" id="startDate">
+                <input type="date" id="endDate">
+                <button onclick="analyzeData()">Apply</button>
+            </div>
+
+            <div id="analysisResults">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+
+        <div id="export-tab" class="tab-content">
+            <h3>Export Data</h3>
+            <div class="export-buttons">
+                <button onclick="exportData('excel')">Export to Excel</button>
+                <button onclick="exportData('csv')">Export to CSV</button>
+                <button onclick="exportData('pdf')">Export to PDF</button>
+                <button onclick="exportData('json')">Export to JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="toys.js"></script>
+</body>
+</html>
